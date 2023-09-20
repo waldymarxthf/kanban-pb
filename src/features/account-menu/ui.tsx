@@ -8,7 +8,7 @@ import {
   rem,
 } from "@mantine/core";
 import { IconChevronDown, IconExternalLink } from "@tabler/icons-react";
-import { $user } from "~shared/lib/model";
+import { $user } from "~shared/lib/supabase/model";
 import { forwardRef } from "react";
 import { useUnit } from "effector-react";
 

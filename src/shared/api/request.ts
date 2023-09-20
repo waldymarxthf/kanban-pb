@@ -1,4 +1,4 @@
-import { supabase } from "~shared/lib/supabase";
+import { supabase } from "~shared/lib/supabase/supabase";
 
 export async function getColumns(user_id: number) {
   const { data } = await supabase

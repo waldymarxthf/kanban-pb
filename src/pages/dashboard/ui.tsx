@@ -1,6 +1,6 @@
 import "@mantine/dates/styles.css";
 import { AppShell, Button, Group, Space, Text } from "@mantine/core";
-import { getSessionFx, loginGoogleFx } from "~shared/lib/model";
+import { getSessionFx, loginGoogleFx } from "~shared/lib/supabase/model";
 import AccountMenu from "~features/account-menu";
 import AddBoardBtn from "~features/add-board";
 import AddColumnModal from "~widgets/board/ui/add-column-modal";

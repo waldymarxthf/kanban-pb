@@ -1,6 +1,6 @@
 import { $column, getColumnsFx } from "../model/model";
 import { Flex, ScrollArea } from "@mantine/core";
-import { $user } from "~shared/lib/model";
+import { $user } from "~shared/lib/supabase/model";
 import Column from "./column";
 import { useEffect } from "react";
 import { useUnit } from "effector-react";

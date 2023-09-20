@@ -1,6 +1,9 @@
 import { createEffect, createEvent, createStore, sample } from "effector";
-import { $user } from "~shared/lib/model";
-import { supabase } from "~shared/lib/supabase";
+import { every, reset } from "patronum";
+import { $user } from "~shared/lib/supabase/model";
+import { isEqual } from "~shared/lib/utils/isEqual";
+import { isLong } from "~shared/lib/utils/isLong";
+import { supabase } from "~shared/lib/supabase/supabase";
 
 export const $tasks = createStore<Task[]>([]);
 
@@ -15,7 +18,7 @@ export interface Task {
 }
 
 export interface Column {
-  id?: number;
+  id: number;
   position: number;
   title: string;
   user_id: string;
@@ -55,8 +58,14 @@ export const createTaskFx = createEffect(async (data: Task) => {
   return await supabase.from("tasks").insert([data]).select();
 });
 
-export const createColumnFx = createEffect(async (data: Column) => {
-  return await supabase.from("columns").insert([data]).select();
+export const createColumnFx = createEffect(
+  async (data: { title: string; position: number; user_id: string }) => {
+    return await supabase.from("columns").insert([data]).select();
+  },
+);
+
+export const deleteColumnFx = createEffect(async (id: number) => {
+  return await supabase.from("columns").delete().eq("id", id);
 });
 
 $column.on(
@@ -128,7 +137,11 @@ sample({
 export const $columnTitle = createStore("");
 export let $columnPosition = createStore<number>(1);
 
-export const createColumn = createEvent();
+export const createColumn = createEvent<void | {
+  title: string;
+  position: number;
+  user_id: string;
+}>();
 export const changedColumnTitle = createEvent<string>();
 
 $columnPosition = $column.map((column) => calculateNextPosition(column));
@@ -157,4 +170,95 @@ sample({
     return currentColumn;
   },
   target: $column,
+});
+
+export const deleteColumn = createEvent<number>();
+
+sample({
+  clock: deleteColumn,
+  target: deleteColumnFx,
+});
+
+sample({
+  clock: deleteColumnFx.done,
+  source: $column,
+  fn: (currentColumn, { params: deleteColumnId }) => {
+    return currentColumn.filter((column) => column.id !== deleteColumnId);
+  },
+  target: $column,
+});
+
+export const toggleEditColumnTitle = createEvent<{
+  id: number;
+  title: string;
+}>();
+
+export const $editingColumnIds = createStore<number>(0);
+
+$editingColumnIds.on(toggleEditColumnTitle, (_, { id }) => id);
+
+export const $newColumnTitle = createStore<string>("");
+export const $errorColumnTitle = createStore<null | "long" | "equal">(null);
+
+export const updateNewColumnTitle = createEvent<string>();
+
+$newColumnTitle.on(toggleEditColumnTitle, (_, { title }) => title);
+$newColumnTitle.on(updateNewColumnTitle, (_, currentTitle) => currentTitle);
+
+export const updateColumnTitleFx = createEffect<
+  { title: string; id: number },
+  Column[] | null,
+  Error
+>(async ({ title, id }) => {
+  const { data } = await supabase
+    .from("columns")
+    .update({ title: title })
+    .eq("id", id)
+    .select();
+  return data;
+});
+
+export const $oldColumnTitle = createStore("");
+$oldColumnTitle.on(toggleEditColumnTitle, (_, { title }) => title);
+
+sample({
+  clock: updateNewColumnTitle,
+  source: [$newColumnTitle, $oldColumnTitle],
+  fn: ([newTitle, oldTitle]) => {
+    if (isLong(newTitle)) return "long";
+    if (isEqual(newTitle, oldTitle)) return "equal";
+    return null;
+  },
+  target: $errorColumnTitle,
+});
+
+export const $isTitleCorrect = every({
+  stores: [$errorColumnTitle],
+  predicate: null,
+});
+
+sample({
+  clock: updateColumnTitleFx.done,
+  source: $column,
+  fn: (currentColumn, { params: { title, id } }) => {
+    return currentColumn.map((column) => {
+      if (column.id === id) {
+        return { ...column, title };
+      }
+      return column;
+    });
+  },
+  target: $column,
+});
+
+reset({
+  clock: updateColumnTitleFx.done,
+  target: $editingColumnIds,
+});
+
+export const resetColumnTitleUpdate = createEvent();
+
+reset({
+  clock: resetColumnTitleUpdate,
+  target: $editingColumnIds,
 });
