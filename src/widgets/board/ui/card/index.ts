@@ -1,3 +1,3 @@
-import { CardTask } from "./ui";
+import { TasksCardList } from "./ui";
 
-export default CardTask;
+export default TasksCardList;
