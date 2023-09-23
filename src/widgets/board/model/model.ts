@@ -181,22 +181,10 @@ interface IHandleDragEnd {
 export const handleDragEnd = createEvent<IHandleDragEnd>();
 
 export const updateTaskPositionFx = createEffect(
-  async ({ position, id }: { position: number; id: number }) => {
-    const { data } = await supabase.from("tasks").update({ position }).eq("id", id).select();
-    return data;
+  async ({ position, id, column_id }: { position: number; id: number; column_id: number }) => {
+    return await supabase.from("tasks").update({ position, column_id }).eq("id", id);
   },
 );
-
-sample({
-  clock: updateTaskPositionFx.done,
-  source: $tasks,
-  fn: (currentTasks, { params: { position, id } }) => {
-    return currentTasks.map((task) => {
-      return task.id === id ? { ...task, position } : task;
-    });
-  },
-  target: $tasks,
-});
 
 sample({
   clock: handleDragEnd,
@@ -242,6 +230,23 @@ sample({
     return finalTasks.sort((a, b) => a.position - b.position);
   },
   target: $tasks,
+});
+
+sample({
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
+  clock: handleDragEnd,
+  fn: (params) => {
+    const { destination, draggableId } = params;
+    if (!destination) return;
+
+    return {
+      position: destination.index,
+      id: Number(draggableId),
+      column_id: Number(destination.droppableId),
+    };
+  },
+  target: updateTaskPositionFx,
 });
 
 debug($tasks);
