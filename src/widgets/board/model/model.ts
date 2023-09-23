@@ -1,13 +1,7 @@
 import { calculateNextTaskPosition, sortByPosition } from "../lib";
-import {
-  combine,
-  createEffect,
-  createEvent,
-  createStore,
-  restore,
-  sample,
-} from "effector";
-import { every, reset } from "patronum";
+import { combine, createEffect, createEvent, createStore, restore, sample } from "effector";
+import { debug, every, reset } from "patronum";
+import type { DraggableLocation } from "@hello-pangea/dnd";
 import { isEqual } from "~shared/lib/utils/isEqual";
 import { isLong } from "~shared/lib/utils/isLong";
 import { supabase } from "~shared/lib/supabase/supabase";
@@ -46,10 +40,7 @@ $oldColumnTitle.on(toggleEditColumnTitle, (_, { title }) => title);
 
 export const getColumnsFx = createEffect<string, Column[] | null, Error>(
   async (user_id: string) => {
-    const { data } = await supabase
-      .from("columns")
-      .select("*")
-      .eq("user_id", user_id);
+    const { data } = await supabase.from("columns").select("*").eq("user_id", user_id);
     return data;
   },
 );
@@ -59,11 +50,7 @@ export const updateColumnTitleFx = createEffect<
   Column[] | null,
   Error
 >(async ({ title, id }) => {
-  const { data } = await supabase
-    .from("columns")
-    .update({ title: title })
-    .eq("id", id)
-    .select();
+  const { data } = await supabase.from("columns").update({ title: title }).eq("id", id).select();
   return data;
 });
 
@@ -76,10 +63,7 @@ export const deleteColumnFx = createEffect(async (id: number) => {
 sample({
   clock: getColumnsFx.done,
   source: $column,
-  fn: (
-    state: Column[],
-    { result }: { params: string; result: Column[] | null },
-  ) => {
+  fn: (state: Column[], { result }: { params: string; result: Column[] | null }) => {
     return result !== null ? result.sort(sortByPosition) : state;
   },
   target: $column,
@@ -163,13 +147,9 @@ sample({
   target: $tasks,
 });
 
-export const $taskPosition = combine(
-  $tasks,
-  $taskColumnId,
-  (tasks, currentColumnId) => {
-    return calculateNextTaskPosition(tasks, currentColumnId);
-  },
-);
+export const $taskPosition = combine($tasks, $taskColumnId, (tasks, currentColumnId) => {
+  return calculateNextTaskPosition(tasks, currentColumnId);
+});
 
 sample({
   clock: createTask,
@@ -191,3 +171,77 @@ sample({
   },
   target: $tasks,
 });
+
+interface IHandleDragEnd {
+  destination: DraggableLocation | null;
+  draggableId: string;
+  source: DraggableLocation;
+}
+
+export const handleDragEnd = createEvent<IHandleDragEnd>();
+
+export const updateTaskPositionFx = createEffect(
+  async ({ position, id }: { position: number; id: number }) => {
+    const { data } = await supabase.from("tasks").update({ position }).eq("id", id).select();
+    return data;
+  },
+);
+
+sample({
+  clock: updateTaskPositionFx.done,
+  source: $tasks,
+  fn: (currentTasks, { params: { position, id } }) => {
+    return currentTasks.map((task) => {
+      return task.id === id ? { ...task, position } : task;
+    });
+  },
+  target: $tasks,
+});
+
+sample({
+  clock: handleDragEnd,
+  source: $tasks,
+  fn: (currentTasks, params) => {
+    const { destination, source, draggableId } = params;
+
+    if (
+      !destination ||
+      (destination.index === source.index && destination.droppableId === source.droppableId)
+    ) {
+      return currentTasks;
+    }
+
+    const columnId = Number(destination.droppableId);
+    const srcColumnId = Number(source.droppableId);
+
+    const taskToMove = currentTasks.find((task) => task.id === Number(draggableId));
+
+    if (!taskToMove) return currentTasks;
+
+    const columnTasks = currentTasks.filter((task) => task.column_id === columnId);
+    const srcColumnTasks = currentTasks.filter((task) => task.column_id === srcColumnId);
+    const otherColumnTasks = currentTasks.filter(
+      (task) => task.column_id !== srcColumnId && task.column_id !== columnId,
+    );
+
+    if (columnId !== srcColumnId) {
+      const [removedTask] = srcColumnTasks.splice(source.index, 1);
+      removedTask.column_id = columnId;
+      columnTasks.splice(destination.index, 0, removedTask);
+    } else {
+      const [removedTask] = columnTasks.splice(source.index, 1);
+      columnTasks.splice(destination.index, 0, removedTask);
+    }
+
+    const updatedColumnTasks = columnTasks.map((task, index) => ({ ...task, position: index }));
+
+    let finalTasks = columnId !== srcColumnId ? [...srcColumnTasks] : [];
+
+    finalTasks = [...finalTasks, ...updatedColumnTasks, ...otherColumnTasks];
+
+    return finalTasks.sort((a, b) => a.position - b.position);
+  },
+  target: $tasks,
+});
+
+debug($tasks);

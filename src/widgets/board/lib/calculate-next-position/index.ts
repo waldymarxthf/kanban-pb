@@ -1,5 +1,4 @@
-import type { Column } from "~widgets/board/ui/column/model";
-import type { Task } from "~widgets/board";
+import type { Column, Task } from "~widgets/board";
 
 export function calculateNextColumnPosition(columns: Column[]): number {
   if (columns.length === 0) return 1;
@@ -16,7 +15,7 @@ export function calculateNextTaskPosition(
 ): number {
   const tasksInColumn = taskList.filter((task) => task.column_id === columnId);
 
-  if (tasksInColumn.length === 0) return 1;
+  if (tasksInColumn.length === 0) return 0;
 
   const maxPosition = Math.max(...tasksInColumn.map((task) => task.position));
   const nextPosition = maxPosition + 1;
