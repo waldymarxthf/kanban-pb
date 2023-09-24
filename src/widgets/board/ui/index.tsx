@@ -16,16 +16,11 @@ export function Board() {
   }, [user]);
 
   return (
-    <ScrollArea h={830} type="scroll">
-      {/* <Flex gap={10}> */}
+    <ScrollArea style={{ height: "calc(100vh - 95px)" }} type="always">
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
           {(provided) => (
-            <div
-              style={{ display: "flex", gap: "5px" }}
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
+            <div style={{ display: "flex" }} {...provided.droppableProps} ref={provided.innerRef}>
               {column.map((item, index) => (
                 <Column key={item.id} title={item.title} id={item.id} index={index} />
               ))}
@@ -34,7 +29,6 @@ export function Board() {
           )}
         </Droppable>
       </DragDropContext>
-      {/* </Flex> */}
     </ScrollArea>
   );
 }

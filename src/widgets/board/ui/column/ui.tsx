@@ -1,7 +1,6 @@
 import { $tasks, getTasksFx } from "~widgets/board/model/model";
-import AddTaskCardModal from "../add-card-modal";
 import { ColumnTitle } from "~features/board/column-title";
-import { Draggable, Droppable } from "@hello-pangea/dnd";
+import { Draggable } from "@hello-pangea/dnd";
 import { Stack } from "@mantine/core";
 import TasksCardList from "../card";
 import { useEffect } from "react";
@@ -19,12 +18,8 @@ export function Column({ title, id, index }: { title: string; id: number; index:
   return (
     <Draggable key={id} index={index} draggableId={String(id)}>
       {(provided) => (
-        <div
-          style={{ marginRight: "var(--mantine-space-xs)" }}
-          {...provided.draggableProps}
-          ref={provided.innerRef}
-        >
-          <Stack align="flex-start" w={310} gap={5}>
+        <div {...provided.draggableProps} ref={provided.innerRef}>
+          <Stack align="flex-start" w={310} gap={5} mr={5}>
             <div {...provided.dragHandleProps}>
               <ColumnTitle title={title} id={id} quantity={filteredTasks.length} />
             </div>

@@ -246,7 +246,6 @@ sample({
   source: $column,
   fn: (currentColumn, params) => {
     const { destination, source, type } = params;
-    console.log(params);
 
     if (
       !destination ||
