@@ -176,6 +176,7 @@ interface IHandleDragEnd {
   destination: DraggableLocation | null;
   draggableId: string;
   source: DraggableLocation;
+  type: string;
 }
 
 export const handleDragEnd = createEvent<IHandleDragEnd>();
@@ -186,11 +187,19 @@ export const updateTaskPositionFx = createEffect(
   },
 );
 
+export const updateColumnPositionFx = createEffect(
+  async ({ position, id }: { position: number; id: number }) => {
+    return await supabase.from("columns").update({ position }).eq("id", id);
+  },
+);
+
 sample({
   clock: handleDragEnd,
   source: $tasks,
   fn: (currentTasks, params) => {
-    const { destination, source, draggableId } = params;
+    const { destination, source, draggableId, type } = params;
+
+    if (type !== "TASK") return currentTasks;
 
     if (
       !destination ||
@@ -233,12 +242,38 @@ sample({
 });
 
 sample({
+  clock: handleDragEnd,
+  source: $column,
+  fn: (currentColumn, params) => {
+    const { destination, source, type } = params;
+    console.log(params);
+
+    if (
+      !destination ||
+      (destination.index === source.index && destination.droppableId === source.droppableId)
+    ) {
+      return currentColumn;
+    }
+
+    if (type !== "COLUMN") return currentColumn;
+
+    const [removedColumn] = currentColumn.splice(source.index, 1);
+    currentColumn.splice(destination.index, 0, removedColumn);
+    const updatedColumns = currentColumn.map((column, index) => ({ ...column, position: index }));
+    return updatedColumns;
+  },
+  target: $column,
+});
+
+sample({
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
   clock: handleDragEnd,
   fn: (params) => {
-    const { destination, draggableId } = params;
+    const { destination, draggableId, type } = params;
     if (!destination) return;
+
+    if (type !== "TASK") return;
 
     return {
       position: destination.index,
@@ -249,4 +284,22 @@ sample({
   target: updateTaskPositionFx,
 });
 
-debug($tasks);
+sample({
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
+  clock: handleDragEnd,
+  fn: (params) => {
+    const { destination, draggableId, type } = params;
+    if (!destination) return;
+
+    if (type !== "COLUMN") return;
+
+    return {
+      position: destination.index,
+      id: Number(draggableId),
+    };
+  },
+  target: updateColumnPositionFx,
+});
+
+debug($column);

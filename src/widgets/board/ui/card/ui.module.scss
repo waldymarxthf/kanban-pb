@@ -1,7 +1,5 @@
 .item {
-  display: flex;
-  align-items: center;
-  padding: 5px;
+  padding-bottom: var(--mantine-spacing-xs);
 }
 .itemDragging {
   box-shadow: var(--mantine-shadow-sm);

@@ -7,15 +7,7 @@ import {
   taskPriorityChanged,
   taskTitleChanged,
 } from "~widgets/board/model/model";
-import {
-  Button,
-  Chip,
-  Group,
-  Modal,
-  Space,
-  Text,
-  Textarea,
-} from "@mantine/core";
+import { Button, Chip, Group, Modal, Space, Text, Textarea } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { IconPlus } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";

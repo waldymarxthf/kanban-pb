@@ -1,19 +1,9 @@
-import {
-  $editingColumnIds,
-  deleteColumnFx,
-  toggleEditColumnTitle,
-} from "~widgets/board";
+import { $editingColumnIds, deleteColumnFx, toggleEditColumnTitle } from "~widgets/board";
 import { ActionIcon, Menu, rem } from "@mantine/core";
 import { IconDots, IconEdit, IconTrash } from "@tabler/icons-react";
 import { useUnit } from "effector-react";
 
-export function ColumnDropdownMenu({
-  title,
-  id,
-}: {
-  title: string;
-  id: number;
-}) {
+export function ColumnDropdownMenu({ title, id }: { title: string; id: number }) {
   const editingColumn = useUnit($editingColumnIds);
   return (
     <Menu shadow="md" width={200} radius="md">
@@ -37,9 +27,7 @@ export function ColumnDropdownMenu({
         <Menu.Item
           color="red"
           onClick={() => deleteColumnFx(id)}
-          leftSection={
-            <IconTrash style={{ width: rem(14), height: rem(14) }} />
-          }
+          leftSection={<IconTrash style={{ width: rem(14), height: rem(14) }} />}
         >
           Delete column
         </Menu.Item>
